@@ -1,0 +1,72 @@
+version: "3.9"
+
+networks:
+  tv_net:
+    name: tv_net # Custom network for True Vision stack
+
+services:
+  tv-gateway:
+    image: nginx:alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports: ["80:80"]
+    depends_on: [tv-dashboard]
+    networks: [tv_net]
+
+  tv-dashboard:
+    build:
+      context: ../../tv-dashboard
+      dockerfile: Dockerfile
+    image: tv-dashboard:latest
+    expose: ["80"]
+    networks: [tv_net]
+
+  # Uncomment the following services when ready to use the backend services
+  # tv-auth-svc:
+  #   build:
+  #     context: ../../tv-auth-svc
+  #     dockerfile: Dockerfile
+  #   image: tv-auth-svc:latest
+  #   container_name: tv-auth-svc
+  #   environment:
+  #     - DATABASE_URL=postgres://postgres:postgres@postgres:5432/truevision
+  #     - REDIS_URL=redis://redis:6379
+  #     - TV_JWT_ISSUER=https://truevision.local
+  #   depends_on: [postgres, redis]
+  #   networks: [tv_net]
+
+  # tv-user-svc:
+  #   build:
+  #     context: ../../tv-user-svc
+  #     dockerfile: Dockerfile
+  #   image: tv-user-svc:latest
+  #   container_name: tv-user-svc
+  #   environment:
+  #     - DATABASE_URL=postgres://postgres:postgres@postgres:5432/truevision
+  #     - TV_JWKS_URI=http://tv-auth-svc:3000/.well-known/jwks.json
+  #   depends_on: [postgres]
+  #   networks: [tv_net]
+
+  # tv-bff:
+  #   build:
+  #     context: ../../tv-bff
+  #     dockerfile: Dockerfile
+  #   image: tv-bff:latest
+  #   container_name: tv-bff
+  #   depends_on: [tv-auth-svc, tv-user-svc]
+  #   networks: [tv_net]
+
+  # postgres:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: truevision
+  #   volumes: ["pg:/var/lib/postgresql/data"]
+  #   networks: [tv_net]
+
+  # redis:
+  #   image: redis:7-alpine
+  #   networks: [tv_net]
+
+volumes:
+  pg: {}
